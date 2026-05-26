@@ -1,3 +1,6 @@
+# Config local — API keys, URLs privadas, nunca al repo
+configs.local/
+
 # Datos de audio — demasiado grandes para git
 data/positivos/
 data/sintetizados/
