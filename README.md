@@ -8,15 +8,17 @@ Forma parte del ecosistema **J** — una plataforma de asistente de voz local, p
 
 ## ¿Qué incluye este repositorio?
 
-- **Modelo preentrenado** `ok_jota.tflite` — la wake word oficial del ecosistema J, lista para usar sin necesidad de entrenar.
-- **Pipeline de entrenamiento** — scripts para grabar muestras reales, generar datos sintéticos con Piper TTS y entrenar tu propio modelo en macOS (Apple Silicon) o cualquier máquina con GPU.
-- **Guías de integración** — cómo usar el modelo con wyoming-openwakeword y jota-voice.
+- **Pipeline de entrenamiento** — scripts para grabar muestras reales, generar datos sintéticos con Piper TTS y entrenar el modelo en macOS (Apple Silicon) o cualquier máquina con GPU.
+- **Guías de integración** — cómo usar el modelo resultante con wyoming-openwakeword y jota-voice.
+- **Modelo `ok_jota.tflite`** — se generará aquí una vez completado el entrenamiento y quedará versionado en `models/` para uso directo.
 
 ---
 
 ## Uso rápido — modelo preentrenado
 
-Si solo quieres usar la wake word **"ok jota"** sin entrenar nada:
+> **Estado actual:** el modelo `ok_jota.tflite` está en proceso de entrenamiento. Cuando esté disponible, podrás usarlo directamente sin necesidad de entrenar nada.
+
+Una vez disponible, para usar la wake word **"ok jota"**:
 
 ```bash
 # Copia el modelo al directorio de openWakeWord
