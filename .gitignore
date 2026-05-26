@@ -1,0 +1,27 @@
+# Datos de audio — demasiado grandes para git
+data/positivos/
+data/sintetizados/
+data/negativos/
+
+# Entorno virtual
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Piper binario y modelos de voz (descarga única local)
+piper/
+
+# Datasets de openWakeWord (descarga automática ~2-4 GB)
+openWakeWord/datasets/
+
+# Artefactos temporales de entrenamiento
+output/*.ckpt
+output/*.pt
+output/logs/
+
+# El modelo .tflite final SÍ se versiona (es pequeño, ~5 KB)
+!models/*.tflite
+
+# macOS
+.DS_Store

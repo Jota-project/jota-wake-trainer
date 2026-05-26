@@ -1,0 +1,35 @@
+# Configuración de entrenamiento para la wake word "ok jota"
+# Usar con scripts/entrenar.sh
+
+wake_word:
+  phrase: "ok jota"
+  model_name: ok_jota
+  threshold: 0.3
+
+data:
+  positivos_dir: data/positivos
+  sintetizados_dir: data/sintetizados
+  output_dir: output
+
+training:
+  epochs: 100
+  batch_size: 32
+  learning_rate: 0.001
+  # Augmentación aplicada automáticamente por el pipeline
+  augmentation:
+    room_impulse_responses: true
+    background_noise: true
+    volume_variation: true
+    augmentation_factor: 10   # ×10 muestras por clip original
+
+synthesis:
+  piper_binary: piper/piper
+  voices_dir: piper/voices
+  speeds: [0.8, 0.9, 1.0, 1.1, 1.2]
+  # Voces a usar — completar con los IDs reales tras instalar Piper
+  # Ver docs/recording-guide.md#voces-piper-recomendadas
+  voices: []
+
+export:
+  format: tflite
+  output_path: models/ok_jota.tflite
