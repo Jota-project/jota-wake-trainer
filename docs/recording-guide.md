@@ -35,9 +35,19 @@ data/positivos/
 └── persona3/
 ```
 
-## Muestras sintéticas con Piper TTS
+## Muestras sintéticas
 
-El script `scripts/generar_sinteticos.sh` automatiza la síntesis.
+El pipeline de entrenamiento lee todos los WAVs de `data/sintetizados/` sin importar su origen.
+Puedes combinar libremente cualquier fuente TTS: Piper, ElevenLabs, tu propio servidor local, etc.
+El formato debe ser el mismo que las grabaciones reales: **WAV · 16kHz · mono · 16-bit**.
+
+Este repositorio incluye `scripts/generar_sinteticos_piper.sh` como fuente por defecto (gratuita, offline).
+Si tienes acceso a servicios adicionales, simplemente deposita los WAVs resultantes en `data/sintetizados/`
+antes de lanzar el entrenamiento.
+
+### Síntesis con Piper TTS
+
+El script `scripts/generar_sinteticos_piper.sh` automatiza la síntesis.
 Genera 1 clip por voz × por velocidad = 5 clips base por voz.
 
 ### Voces Piper recomendadas
