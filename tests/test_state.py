@@ -64,3 +64,9 @@ def test_project_paths(tmp_projects):
     assert p.positivos_path == tmp_projects / "ok_jota" / "data" / "positivos"
     assert p.sintetizados_path == tmp_projects / "ok_jota" / "data" / "sintetizados"
     assert p.models_path == tmp_projects / "ok_jota" / "models"
+
+
+def test_create_project_raises_if_exists(tmp_projects):
+    create_project("ok jota", "ok_jota", ["Alfonso"])
+    with pytest.raises(FileExistsError):
+        create_project("ok jota diferente", "ok_jota", ["María"])

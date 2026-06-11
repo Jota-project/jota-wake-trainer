@@ -73,6 +73,7 @@ def _to_dict(project: Project) -> dict:
 
 
 def _from_dict(d: dict) -> Project:
+    d = dict(d)  # copia superficial para no mutar el argumento
     voices = [Voice(**v) for v in d.pop("voices", [])]
     synth_raw = d.pop("synthesis", {})
     sources = [TtsSource(**s) for s in synth_raw.pop("sources", [])]
@@ -105,6 +106,12 @@ def list_projects() -> list[Project]:
 
 
 def create_project(wake_word: str, model_name: str, voice_names: list[str]) -> Project:
+    session_path = PROJECTS_ROOT / model_name / SESSION_FILE
+    if session_path.exists():
+        raise FileExistsError(
+            f"El proyecto '{model_name}' ya existe en {session_path}. "
+            "Usa load_project() para cargarlo."
+        )
     project = Project(
         wake_word=wake_word,
         model_name=model_name,
