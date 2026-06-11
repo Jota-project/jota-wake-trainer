@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -E '\\\\.\\(py|sh|json|yaml|yml\\)$')",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(pip install *)",
+      "Bash(wake-trainer --help)",
+      "Bash(git commit *)",
+      "Bash(git *)",
+      "Bash(python *)",
+      "Bash(python3 *)",
+      "Bash(pip show *)",
+      "Bash(pip index *)",
+      "Bash(xargs ls *)",
+      "Bash(pytest *)",
+      "Bash(wake-trainer status *)"
+    ]
+  }
+}
