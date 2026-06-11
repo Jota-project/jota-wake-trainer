@@ -26,6 +26,11 @@ output/logs/
 # El modelo .tflite final SÍ se versiona (es pequeño, ~5 KB)
 !models/*.tflite
 
+# Build artifacts
+*.egg-info/
+dist/
+build/
+
 # macOS
 .DS_Store
 
