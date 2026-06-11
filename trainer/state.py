@@ -127,3 +127,27 @@ def create_project(wake_word: str, model_name: str, voice_names: list[str]) -> P
         (project.positivos_path / voice.name).mkdir(exist_ok=True)
     save_project(project)
     return project
+
+
+AUGMENTATION_FACTOR = 10
+MINIMUM_DATASET_SIZE = 1000
+CLIPS_PER_VOICE = 30
+
+
+def calculate_dataset(project: Project) -> dict:
+    real_clips = len(project.voices) * CLIPS_PER_VOICE
+    synth_clips = sum(
+        len(src.selected_voices) * len(src.speeds)
+        for src in project.synthesis.sources
+    )
+    real_augmented = real_clips * AUGMENTATION_FACTOR
+    synth_augmented = synth_clips * AUGMENTATION_FACTOR
+    total = real_augmented + synth_augmented
+    return {
+        "real_clips": real_clips,
+        "synth_clips": synth_clips,
+        "real_augmented": real_augmented,
+        "synth_augmented": synth_augmented,
+        "total": total,
+        "meets_minimum": total >= MINIMUM_DATASET_SIZE,
+    }

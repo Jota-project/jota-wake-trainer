@@ -70,3 +70,44 @@ def test_create_project_raises_if_exists(tmp_projects):
     create_project("ok jota", "ok_jota", ["Alfonso"])
     with pytest.raises(FileExistsError):
         create_project("ok jota diferente", "ok_jota", ["María"])
+
+
+from trainer.state import calculate_dataset
+
+
+def test_calculate_dataset_no_synthesis(tmp_projects):
+    p = create_project("ok jota", "ok_jota", ["Alfonso", "María"])
+    stats = calculate_dataset(p)
+    assert stats["real_clips"] == 60        # 2 personas × 30
+    assert stats["synth_clips"] == 0
+    assert stats["real_augmented"] == 600   # 60 × 10
+    assert stats["total"] == 600
+    assert stats["meets_minimum"] is False  # < 1000
+
+
+def test_calculate_dataset_with_piper_source(tmp_projects):
+    p = create_project("ok jota", "ok_jota", ["Alfonso", "María", "Carlos"])
+    p.synthesis.sources.append(TtsSource(
+        type="piper",
+        selected_voices=["voz_a", "voz_b", "voz_c", "voz_d", "voz_e", "voz_f"],
+        speeds=[0.8, 0.9, 1.0, 1.1, 1.2],
+    ))
+    stats = calculate_dataset(p)
+    assert stats["real_clips"] == 90        # 3 × 30
+    assert stats["synth_clips"] == 30       # 6 voces × 5 velocidades
+    assert stats["total"] == 1200           # (90 + 30) × 10
+    assert stats["meets_minimum"] is True
+
+
+def test_calculate_dataset_multiple_sources(tmp_projects):
+    p = create_project("ok jota", "ok_jota", ["Alfonso"])
+    p.synthesis.sources = [
+        TtsSource(type="piper", selected_voices=["a", "b"], speeds=[1.0]),
+        TtsSource(type="openai", selected_voices=["Rachel", "Josh"], speeds=[0.9, 1.0, 1.1]),
+    ]
+    stats = calculate_dataset(p)
+    # real: 1 × 30 = 30
+    # synth: piper(2×1=2) + openai(2×3=6) = 8
+    # total: (30+8) × 10 = 380
+    assert stats["synth_clips"] == 8
+    assert stats["total"] == 380
