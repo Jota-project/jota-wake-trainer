@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "jwake-trainer"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "typer>=0.12",
+    "rich>=13",
+    "sounddevice>=0.4.7",
+    "soundfile>=0.12",
+    "numpy>=1.24",
+    "httpx>=0.27",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-asyncio>=0.23"]
+train = ["openWakeWord[train]"]
+
+[project.scripts]
+wake-trainer = "trainer.cli:app"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["trainer*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"

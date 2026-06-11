@@ -28,3 +28,14 @@ output/logs/
 
 # macOS
 .DS_Store
+
+# Datos de audio de proyectos (mismo criterio que data/ raíz)
+projects/*/data/positivos/
+projects/*/data/sintetizados/
+projects/*/data/negativos/
+
+# Artefactos de entrenamiento por proyecto
+projects/*/output/
+
+# El modelo .tflite SÍ se versiona
+!projects/*/models/*.tflite
