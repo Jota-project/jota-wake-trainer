@@ -539,13 +539,13 @@ def _wizard_add_provider() -> None:
     console.print(f"  [green]✅ Provider '{name}' guardado en configs/providers.local.json[/green]")
 
 
-def _provider_to_tts_source(provider, project: Project) -> TtsSource | None:
+def _provider_to_tts_source(provider: "ProviderConfig", project: Project) -> TtsSource | None:
     """Convierte un ProviderConfig global en un TtsSource para el proyecto."""
     import asyncio
 
     if provider.voices:
         selected = provider.voices
-    else:
+    elif provider.type == "openai":
         from trainer.synthesizer import list_voices_openai
         token = os.environ.get(provider.token_env, "") if provider.token_env else ""
         console.print(f"  Consultando voces de [bold]{provider.name}[/bold]...")
@@ -571,6 +571,26 @@ def _provider_to_tts_source(provider, project: Project) -> TtsSource | None:
             console.print("  [yellow]No se pudieron obtener voces automáticamente.[/yellow]")
             raw = ask("Introduce las voces manualmente (separadas por coma)")
             selected = [v.strip() for v in raw.split(",") if v.strip()]
+    else:  # piper
+        from trainer.synthesizer import list_voices_piper
+        console.print(f"  Escaneando modelos en {provider.voices_dir}...")
+        available = list_voices_piper(provider.voices_dir or "piper/voices")
+        if not available:
+            console.print(f"  [red]No se encontraron modelos .onnx en {provider.voices_dir}[/red]")
+            selected = []
+        else:
+            console.print(f"  ✓ {len(available)} modelos encontrados")
+            for i, v in enumerate(available, 1):
+                console.print(f"    {i}. {Path(v).stem}")
+            raw = ask("Selecciona voces (números, o 'todas')", default="todas")
+            if raw.lower() == "todas":
+                selected = available
+            else:
+                try:
+                    indices = [int(x.strip()) - 1 for x in raw.split(",")]
+                    selected = [available[i] for i in indices if 0 <= i < len(available)]
+                except ValueError:
+                    selected = available
 
     if not selected:
         return None
