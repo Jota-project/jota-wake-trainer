@@ -131,27 +131,72 @@ def _wizard_new_project() -> Project | None:
 # ─── Configuración de síntesis ────────────────────────────────────────────────
 
 def _wizard_configure_synthesis(project: Project):
-    while True:
-        source_type = ask_choice(
-            "Tipo de fuente TTS",
-            ["piper", "openai", "ninguna"],
-            default="piper",
+    from trainer.providers import load_providers
+
+    providers = load_providers()
+
+    if not providers:
+        add_now = ask_choice(
+            "No hay providers TTS configurados. ¿Configurar uno ahora?",
+            ["s", "n"],
+            default="s",
         )
-        if source_type == "ninguna":
-            break
+        if add_now == "s":
+            _wizard_add_provider()
+            providers = load_providers()
 
-        if source_type == "piper":
-            source = _configure_piper_source()
-        else:
-            source = _configure_openai_source()
+    if providers:
+        while True:
+            console.print("\n  [bold]Providers TTS disponibles:[/bold]")
+            for i, p in enumerate(providers, 1):
+                voices_info = f"{len(p.voices)} voces" if p.voices else "voces auto"
+                console.print(f"    {i}. [bold]{p.name}[/bold] ({p.type}) — {voices_info}")
+            console.print(f"    {len(providers) + 1}. Añadir nuevo provider ahora")
+            console.print(f"    0. Omitir síntesis TTS")
 
-        if source and source.selected_voices:
-            project.synthesis.sources.append(source)
-            save_project(project)
+            raw = ask("Selecciona provider(s) para este proyecto (números separados por coma)")
+            if raw.strip() == "0":
+                return
 
-        more = ask_choice("¿Añadir otra fuente TTS?", ["s", "n"], default="n")
-        if more != "s":
-            break
+            try:
+                indices = [int(x.strip()) for x in raw.split(",") if x.strip()]
+            except ValueError:
+                console.print("  [red]Entrada inválida.[/red]")
+                continue
+
+            for idx in indices:
+                if idx == len(providers) + 1:
+                    _wizard_add_provider()
+                    providers = load_providers()
+                elif 1 <= idx <= len(providers):
+                    source = _provider_to_tts_source(providers[idx - 1], project)
+                    if source and source.selected_voices:
+                        project.synthesis.sources.append(source)
+                        save_project(project)
+
+            more = ask_choice("¿Añadir otro provider al proyecto?", ["s", "n"], default="n")
+            if more != "s":
+                break
+    else:
+        # Flujo manual de respaldo — sin providers configurados y usuario declinó
+        while True:
+            source_type = ask_choice(
+                "Tipo de fuente TTS",
+                ["piper", "openai", "ninguna"],
+                default="piper",
+            )
+            if source_type == "ninguna":
+                break
+            if source_type == "piper":
+                source = _configure_piper_source()
+            else:
+                source = _configure_openai_source()
+            if source and source.selected_voices:
+                project.synthesis.sources.append(source)
+                save_project(project)
+            more = ask_choice("¿Añadir otra fuente TTS?", ["s", "n"], default="n")
+            if more != "s":
+                break
 
 
 def _configure_piper_source() -> TtsSource | None:
@@ -401,8 +446,150 @@ def run_evaluate_step(model_name: str):
 
 
 def _wizard_add_provider() -> None:
-    """Wizard interactivo para añadir un provider TTS global. (Implementación completa en Task 3)"""
-    explain(
-        "Para añadir un provider TTS, usa las opciones de la línea de comandos:\n"
-        "  wake-trainer providers add --name NOMBRE --type openai --url URL"
+    """Wizard interactivo para añadir un provider TTS global."""
+    import asyncio
+    from trainer.providers import ProviderConfig, add_or_update_provider
+
+    console.print(Panel("[bold]Nuevo provider TTS[/bold]", box=box.ROUNDED))
+
+    name = ask("Nombre del provider (ej: elevenlabs, jspeaker)")
+    if not name:
+        return
+
+    type_ = ask_choice("Tipo", ["openai", "piper"], default="openai")
+
+    if type_ == "openai":
+        url = ask("URL del endpoint (ej: https://api.elevenlabs.io/v1)")
+        token_env_raw = ask("Variable de entorno del token (vacío si no hay autenticación)")
+        token_env = token_env_raw.strip() or None
+
+        token = os.environ.get(token_env, "") if token_env else ""
+        console.print("  Consultando voces disponibles...")
+        from trainer.synthesizer import list_voices_openai
+        voices_raw = asyncio.run(list_voices_openai(url, token))
+
+        if voices_raw:
+            console.print(f"  ✓ {len(voices_raw)} voces encontradas")
+            for i, v in enumerate(voices_raw[:20], 1):
+                vname = v.get("name") or v.get("voice_id") or str(v)
+                console.print(f"    {i}. {vname}")
+            raw = ask("Selecciona voces (números separados por coma, o 'todas')", default="todas")
+            if raw.lower() == "todas":
+                voices = [v.get("name") or v.get("voice_id") for v in voices_raw]
+            else:
+                try:
+                    indices = [int(x.strip()) - 1 for x in raw.split(",")]
+                    voices = [
+                        (voices_raw[i].get("name") or voices_raw[i].get("voice_id"))
+                        for i in indices if 0 <= i < len(voices_raw)
+                    ]
+                except ValueError:
+                    voices = [v.get("name") or v.get("voice_id") for v in voices_raw]
+        else:
+            console.print("  [yellow]No se encontraron voces automáticamente.[/yellow]")
+            raw = ask("Introduce las voces manualmente (separadas por coma, vacío si solo hay una)")
+            voices = [v.strip() for v in raw.split(",") if v.strip()] if raw.strip() else []
+
+        provider = ProviderConfig(
+            name=name,
+            type="openai",
+            url=url,
+            token_env=token_env,
+            voices=voices,
+        )
+
+    else:  # piper
+        from trainer.synthesizer import list_voices_piper
+        voices_dir = ask("Directorio de voces Piper", default="piper/voices")
+        binary = ask("Ruta al binario piper", default="piper/piper")
+        available = list_voices_piper(voices_dir)
+        if not available:
+            console.print(f"  [red]No se encontraron modelos .onnx en {voices_dir}[/red]")
+            return
+        console.print("  Voces disponibles:")
+        for i, v in enumerate(available, 1):
+            console.print(f"    {i}. {Path(v).stem}")
+        raw = ask("Selecciona voces (números separados por coma, o 'todas')", default="todas")
+        if raw.lower() == "todas":
+            voices = available
+        else:
+            try:
+                indices = [int(x.strip()) - 1 for x in raw.split(",")]
+                voices = [available[i] for i in indices if 0 <= i < len(available)]
+            except ValueError:
+                voices = available
+        provider = ProviderConfig(
+            name=name,
+            type="piper",
+            binary=binary,
+            voices_dir=voices_dir,
+            voices=voices,
+        )
+
+    raw_speeds = ask(
+        "Velocidades por defecto (ej: 0.8,1.0,1.2)",
+        default=",".join(str(s) for s in provider.speeds),
+    )
+    try:
+        provider.speeds = [float(s.strip()) for s in raw_speeds.split(",") if s.strip()]
+    except ValueError:
+        pass
+
+    add_or_update_provider(provider)
+    console.print(f"  [green]✅ Provider '{name}' guardado en configs/providers.local.json[/green]")
+
+
+def _provider_to_tts_source(provider, project: Project) -> TtsSource | None:
+    """Convierte un ProviderConfig global en un TtsSource para el proyecto."""
+    import asyncio
+
+    if provider.voices:
+        selected = provider.voices
+    else:
+        from trainer.synthesizer import list_voices_openai
+        token = os.environ.get(provider.token_env, "") if provider.token_env else ""
+        console.print(f"  Consultando voces de [bold]{provider.name}[/bold]...")
+        voices_raw = asyncio.run(list_voices_openai(provider.url, token))
+        if voices_raw:
+            console.print(f"  ✓ {len(voices_raw)} voces disponibles")
+            for i, v in enumerate(voices_raw[:20], 1):
+                vname = v.get("name") or v.get("voice_id") or str(v)
+                console.print(f"    {i}. {vname}")
+            raw = ask("Selecciona voces (números, o 'todas')", default="todas")
+            if raw.lower() == "todas":
+                selected = [v.get("name") or v.get("voice_id") for v in voices_raw]
+            else:
+                try:
+                    indices = [int(x.strip()) - 1 for x in raw.split(",")]
+                    selected = [
+                        (voices_raw[i].get("name") or voices_raw[i].get("voice_id"))
+                        for i in indices if 0 <= i < len(voices_raw)
+                    ]
+                except ValueError:
+                    selected = [v.get("name") or v.get("voice_id") for v in voices_raw]
+        else:
+            console.print("  [yellow]No se pudieron obtener voces automáticamente.[/yellow]")
+            raw = ask("Introduce las voces manualmente (separadas por coma)")
+            selected = [v.strip() for v in raw.split(",") if v.strip()]
+
+    if not selected:
+        return None
+
+    raw_speeds = ask(
+        f"Velocidades para {provider.name} en este proyecto",
+        default=",".join(str(s) for s in provider.speeds),
+    )
+    try:
+        speeds = [float(s.strip()) for s in raw_speeds.split(",") if s.strip()]
+    except ValueError:
+        speeds = provider.speeds
+
+    return TtsSource(
+        type=provider.type,
+        url=provider.url,
+        token_env=provider.token_env,
+        binary=provider.binary,
+        voices_dir=provider.voices_dir,
+        selected_voices=selected,
+        speeds=speeds,
     )
