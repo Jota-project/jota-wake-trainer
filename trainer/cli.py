@@ -3,6 +3,7 @@ import typer
 from rich.console import Console
 from trainer.state import list_projects, load_project
 from trainer.ui.panels import print_header, print_project_list, print_project_status
+from trainer.ui.tables import print_providers_table
 
 app = typer.Typer(
     name="wake-trainer",
@@ -27,33 +28,7 @@ app.add_typer(providers_app)
 def providers_list():
     """Lista todos los providers TTS configurados."""
     from trainer.providers import load_providers
-    from rich.table import Table
-    from rich import box as rich_box
-
-    providers = load_providers()
-    if not providers:
-        console.print(
-            "[dim]No hay providers configurados. "
-            "Usa [bold]wake-trainer providers add[/bold] para añadir uno.[/dim]"
-        )
-        return
-
-    table = Table(box=rich_box.SIMPLE_HEAD)
-    table.add_column("Nombre", style="bold")
-    table.add_column("Tipo")
-    table.add_column("URL / Directorio")
-    table.add_column("Token", justify="center")
-    table.add_column("Voces", justify="right")
-    table.add_column("Velocidades")
-
-    for p in providers:
-        location = p.url or (f"{p.voices_dir}" if p.voices_dir else "—")
-        token_str = "✅" if p.token_env else "—"
-        voices_str = str(len(p.voices)) if p.voices else "auto"
-        speeds_str = ", ".join(str(s) for s in p.speeds)
-        table.add_row(p.name, p.type, location, token_str, voices_str, speeds_str)
-
-    console.print(table)
+    print_providers_table(load_providers())
 
 
 @providers_app.command("add")
@@ -67,8 +42,8 @@ def providers_add(
 ):
     """Añade o actualiza un provider TTS global. Sin flags: lanza wizard interactivo."""
     if not name or not type_:
-        from trainer.wizard import _wizard_add_provider
-        _wizard_add_provider()
+        from trainer.workflows.synthesis import add_provider_interactive
+        add_provider_interactive()
         return
 
     if type_ not in ("piper", "openai"):
