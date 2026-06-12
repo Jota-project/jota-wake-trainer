@@ -18,6 +18,10 @@ class ProviderConfig:
     binary: Optional[str] = None
     voices_dir: Optional[str] = None
 
+    def __post_init__(self):
+        if not self.speeds:
+            self.speeds = [0.8, 0.9, 1.0, 1.1, 1.2]
+
 
 def load_providers() -> list[ProviderConfig]:
     """Devuelve lista vacía si el fichero no existe."""

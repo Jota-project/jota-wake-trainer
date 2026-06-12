@@ -169,7 +169,7 @@ def _wizard_configure_synthesis(project: Project):
                     _wizard_add_provider()
                     providers = load_providers()
                 elif 1 <= idx <= len(providers):
-                    source = _provider_to_tts_source(providers[idx - 1], project)
+                    source = _provider_to_tts_source(providers[idx - 1])
                     if source and source.selected_voices:
                         project.synthesis.sources.append(source)
                         save_project(project)
@@ -539,7 +539,7 @@ def _wizard_add_provider() -> None:
     console.print(f"  [green]✅ Provider '{name}' guardado en configs/providers.local.json[/green]")
 
 
-def _provider_to_tts_source(provider: "ProviderConfig", project: Project) -> TtsSource | None:
+def _provider_to_tts_source(provider: "ProviderConfig") -> TtsSource | None:
     """Convierte un ProviderConfig global en un TtsSource para el proyecto."""
     import asyncio
 
