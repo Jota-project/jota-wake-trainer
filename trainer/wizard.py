@@ -398,3 +398,11 @@ def run_train_step(model_name: str):
 def run_evaluate_step(model_name: str):
     project = load_project(model_name)
     _wizard_evaluate(project)
+
+
+def _wizard_add_provider() -> None:
+    """Wizard interactivo para añadir un provider TTS global. (Implementación completa en Task 3)"""
+    explain(
+        "Para añadir un provider TTS, usa las opciones de la línea de comandos:\n"
+        "  wake-trainer providers add --name NOMBRE --type openai --url URL"
+    )
