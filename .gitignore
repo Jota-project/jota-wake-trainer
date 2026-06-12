@@ -1,6 +1,9 @@
 # Config local — API keys, URLs privadas, nunca al repo
 configs.local/
 
+# Config local de providers TTS (contiene referencias a API keys — no versionar)
+configs/providers.local.json
+
 # Datos de audio — demasiado grandes para git
 data/positivos/
 data/sintetizados/
