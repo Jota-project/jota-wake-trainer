@@ -75,6 +75,66 @@ def providers_remove(
     console.print(f"  [green]✅ Provider '{name}' eliminado.[/green]")
 
 
+@providers_app.command("piper-voices")
+def providers_piper_voices(
+    lang: str = typer.Option("es", "--lang", "-l", help="Filtro de idioma (ej: es, en, fr)."),
+    dest: str = typer.Option("piper/voices", "--dest", "-d", help="Directorio de destino."),
+):
+    """Lista y descarga modelos de voz Piper desde HuggingFace."""
+    from trainer.piper_downloader import fetch_voices_index, download_voice
+    from trainer.ui.prompts import ask
+    from rich.table import Table
+    from rich import box as rich_box
+    from pathlib import Path
+
+    console.print(f"  Obteniendo índice de voces Piper (idioma: {lang})...")
+    try:
+        voices = fetch_voices_index(lang_filter=lang)
+    except Exception as exc:
+        console.print(f"[red]Error al obtener el índice: {exc}[/red]")
+        raise typer.Exit(1)
+
+    if not voices:
+        console.print(f"[yellow]No se encontraron voces para el idioma '{lang}'.[/yellow]")
+        raise typer.Exit(0)
+
+    items = list(voices.items())
+    table = Table(box=rich_box.SIMPLE_HEAD)
+    table.add_column("#", justify="right")
+    table.add_column("Clave")
+    table.add_column("Calidad")
+    table.add_column("Tamaño aprox.")
+    for i, (key, info) in enumerate(items, 1):
+        total_bytes = sum(f.get("size_bytes", 0) for f in info["files"].values())
+        size_mb = f"{total_bytes / 1_000_000:.0f} MB"
+        table.add_row(str(i), key, info.get("quality", "?"), size_mb)
+    console.print(table)
+
+    raw = ask("Selecciona voces a descargar (números separados por coma, o 'todas')", default="todas")
+    if raw.strip().lower() == "todas":
+        selected_items = items
+    else:
+        try:
+            indices = [int(x.strip()) - 1 for x in raw.split(",") if x.strip()]
+            selected_items = [items[i] for i in indices if 0 <= i < len(items)]
+        except ValueError:
+            console.print("[red]Selección inválida.[/red]")
+            raise typer.Exit(1)
+
+    dest_path = Path(dest)
+    for key, info in selected_items:
+        file_paths = list(info["files"].keys())
+        console.print(f"  Descargando [bold]{key}[/bold]...")
+        try:
+            downloaded = download_voice(file_paths, dest_path)
+            for p in downloaded:
+                console.print(f"    ✓ {p.name}")
+        except Exception as exc:
+            console.print(f"  [red]Error descargando {key}: {exc}[/red]")
+
+    console.print(f"\n[green]Modelos guardados en {dest_path.resolve()}[/green]")
+
+
 @app.callback(invoke_without_command=True)
 def main(ctx: typer.Context):
     """Sin subcomando: lanza el wizard interactivo."""
