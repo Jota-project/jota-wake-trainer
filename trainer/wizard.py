@@ -59,6 +59,21 @@ def _wizard_continue(project: Project):
     print_project_status(project)
     console.print()
 
+    if not project.voices:
+        explain(
+            "Este proyecto no tiene personas configuradas para grabar.\n"
+            "Cada persona graba [bold]30 clips[/bold] en 10 condiciones distintas.\n"
+            "Cuantas más personas graben, mejor reconocerá el modelo sus voces."
+        )
+        add = ask_choice("¿Añadir personas para grabar?", ["s", "n"], default="s")
+        if add == "s":
+            n = ask_int("¿Cuántas personas van a grabar?", minimum=1)
+            from trainer.state import Voice, save_project
+            for i in range(1, n + 1):
+                name = ask(f"  Nombre de la persona {i}")
+                project.voices.append(Voice(name=name or f"Persona {i}"))
+            save_project(project)
+
     pending_voices = [v for v in project.voices if v.status == "pending"]
     if pending_voices:
         show_preparation_summary(project)

@@ -13,11 +13,147 @@ dependencies = [
     "soundfile>=0.12",
     "numpy>=1.24",
     "httpx>=0.27",
+    # Para normalizar a 16kHz mono el audio sintetizado (las voces Piper no
+    # comparten sample rate nativo — ver trainer/audio_utils.py). Se necesita
+    # en tiempo de síntesis, no solo de entrenamiento, así que va en las
+    # dependencias base y no en el extra "train".
+    "scipy>=1.10",
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "pytest-asyncio>=0.23"]
-train = ["openwakeword[full]"]
+dev = ["pytest>=8", "pytest-asyncio>=0.24"]
+# NOTA: openwakeword no tiene un extra "train" — el propio paquete solo
+# define "full", que además arrastra tensorflow-cpu==2.8.1 y onnx-tf==1.10.0
+# (sin wheels para macOS Apple Silicon / Python 3.11+). Por eso listamos aquí
+# las dependencias de entrenamiento reales, sin esas dos, y la conversión a
+# tflite se resuelve aparte con el extra "tflite" (ver trainer/tflite_export.py).
+train = [
+    # setuptools 82.0.0 (feb-2026) eliminó pkg_resources por completo.
+    # speechbrain (y otras libs del stack) todavía lo usan en tiempo de
+    # import, así que hay que fijar una versión anterior explícitamente
+    # (no basta con "instalar setuptools": pip resuelve a la última si no
+    # hay tope, y la última ya no lo trae).
+    "setuptools<82",
+    "openwakeword>=0.6.0",
+    "torch>=2.0",
+    "torchaudio>=2.0",
+    "torchinfo>=1.8",
+    "torchmetrics>=0.11.4,<1",
+    "speechbrain>=0.5.14,<1",
+    "audiomentations>=0.30,<1",
+    # Pineado exacto (no ">=0.12,<1"): openwakeword.data.augment_clips llama
+    # a Compose(...) sin `output_type` y da por hecho que devuelve un tensor.
+    # torch-audiomentations avisa de que el default cambiará a 'dict' en una
+    # futura versión de la propia serie 0.12.x — si eso pasa, augment_clips
+    # rompe (intenta hacer .squeeze() sobre un dict). 0.12.0 es la versión
+    # validada de verdad con este pipeline; para subir de versión, revisar
+    # antes si openwakeword ya pasa output_type='tensor' explícitamente.
+    "torch-audiomentations==0.12.0",
+    "acoustics>=0.2.6,<1",
+    "pronouncing>=0.2.0",
+    "mutagen>=1.46",
+    "pyyaml>=6.0",
+    # Para descargar los datasets de ruido de fondo/RIR reales de HuggingFace
+    # (ver trainer/noise_data.py) vía `datasets.load_dataset(..., streaming=True)`
+    # — el mismo mecanismo que usa el notebook oficial de entrenamiento de
+    # openWakeWord. No confundir con "dataset" a secas: es la librería
+    # `datasets` de HuggingFace.
+    "datasets>=2.14,<3",
+]
+tflite = [
+    "onnx>=1.15,<2",
+    # Pineado EXACTO a propósito, no un rango — y a propósito NO a la
+    # última versión disponible.
+    #
+    # Toda la serie 1.x de onnx2tf tiene la metadata del wheel vacía
+    # (Requires-Dist no declara nada real), así que cualquier pin por rango
+    # (nuestro ">=1.20" original, o incluso ">=1.29" confiando en que las
+    # últimas sí declaran dependencias) deja que pip instale lo que ya
+    # hubiera o resuelva una versión cuyo árbol de imports incondicionales
+    # no habíamos verificado — así fuimos encontrando "ModuleNotFoundError"
+    # uno detrás de otro (tf_keras, onnx_graphsurgeon, psutil...), cada vez
+    # que `import onnx2tf` llegaba un poco más lejos.
+    #
+    # Para acabar con eso: se descargó el wheel de la 1.26.9 y se recorrieron
+    # sus ~190 ficheros .py con un parser AST buscando TODO import
+    # incondicional de nivel de módulo (no solo el primero que revienta) —
+    # la lista de abajo es ese resultado completo, no una suposición más.
+    #
+    # Por qué 1.26.9 y no una más reciente: a partir de la 1.27.0, onnx2tf
+    # importa sin condicional `ai_edge_litert`
+    # (`from ai_edge_litert.interpreter import Interpreter`), y ese paquete
+    # SOLO publica wheels manylinux (Linux) en PyPI — ni un wheel ni un sdist
+    # para macOS, de ninguna versión. Desde 1.27.0 en adelante (incluida toda
+    # la serie 1.29.x, que sí declara sus deps correctamente pero arrastra
+    # esta misma piedra) es sencillamente imposible instalar onnx2tf en
+    # macOS. 1.26.9 es el último patch de la última serie sin esa
+    # dependencia.
+    "onnx2tf==1.26.9",
+    "tensorflow>=2.16,<3",
+    "onnxruntime>=1.17",
+    # A partir de TensorFlow 2.16, Keras 3 es el default y ya no expone la API
+    # de Keras 2 que onnx2tf usa internamente para su conversión "TF-backed".
+    # Sin este paquete, "import onnx2tf" falla con "ModuleNotFoundError: No
+    # module named 'tf_keras'".
+    "tf-keras>=2.16,<3",
+    # Resto de imports incondicionales confirmados por el análisis AST de la
+    # 1.26.9 (todos con wheels universales, sin restricción de plataforma):
+    "onnx-graphsurgeon>=0.5",
+    "psutil>=5.9",
+    "absl-py>=1.0",
+    "flatbuffers>=23",
+    "requests>=2.28",
+    "sng4onnx>=1.0",
+]
+# rhasspy/piper (el binario standalone al que apuntaba la doc original) está
+# archivado y nunca publicó releases para macOS (solo Linux amd64/arm64/armv7).
+# El proyecto activo es OHF-Voice/piper1-gpl, distribuido como paquete Python
+# e invocado como módulo (`python3 -m piper`). Confirmado wheel macOS ARM64
+# disponible desde la 1.4.x.
+piper = [
+    "piper-tts>=1.4,<2",
+]
+# Clonado de voz local con Coqui XTTS v2 (ver scripts/clone_voice_xtts.py).
+# Aparte de "train"/"tflite" a propósito: son ~2GB de pesos de modelo que se
+# descargan la primera vez y solo hacen falta si de verdad vas a clonar una
+# voz, no para entrenar/evaluar el wake word normal.
+#
+# ADVERTENCIA — NO instalar este extra en el mismo entorno donde está
+# instalado (editable o no) el propio paquete "jwake-trainer": la
+# dependencia "coqui-tts-trainer" (que arrastra coqui-tts) se instala bajo
+# el nombre importable "trainer" — el MISMO nombre top-level que el paquete
+# de este repo (trainer/cli.py, trainer/state.py...). Con los dos en el
+# mismo Python, uno de los dos gana la resolución de "import trainer" y el
+# otro se rompe (típicamente ImportError: cannot import name 'TrainerConfig'
+# from 'trainer'). Instala este extra en un venv aparte, sin "-e ." de este
+# proyecto dentro:
+#
+#   python3 -m venv .venv-clone && source .venv-clone/bin/activate
+#   pip install "coqui-tts>=0.24,<1"
+#   python3 scripts/clone_voice_xtts.py ...
+#
+# scripts/clone_voice_xtts.py ya está escrito para no importar nada del
+# paquete "trainer" del repo (reimplementa el resampleo a 16kHz mono a
+# mano) precisamente para poder correr aislado en ese venv sin el proyecto
+# instalado dentro.
+clone = [
+    # Extra "codec" (no solo "coqui-tts" a secas): desde PyTorch 2.9,
+    # torchaudio delega la lectura/escritura de audio en `torchcodec`, que
+    # ya no viene arrastrado automáticamente — sin él, "from TTS.api import
+    # TTS" revienta con "the torchcodec library is required for audio IO".
+    # El propio coqui-tts expone el extra "codec" para instalarlo junto.
+    "coqui-tts[codec]>=0.24,<1",
+    # coqui-tts (a fecha de escribir esto, 0.27.5) todavía importa
+    # `isin_mps_friendly` de transformers.pytorch_utils, una función interna
+    # que transformers eliminó en su versión 5.1 — con transformers>=5.1
+    # instalado, "from TTS.api import TTS" revienta con
+    # "ImportError: cannot import name 'isin_mps_friendly'".
+    # Confirmado por el propio mantenedor de coqui-tts (issue #558 del repo
+    # idiap/coqui-ai-TTS): fijar por debajo de 5.1 hasta que se publique el
+    # fix. coqui-tts solo declara ">=4.57" sin techo, así que hay que
+    # ponerlo aquí explícitamente.
+    "transformers>=4.57,<5.1",
+]
 
 [project.scripts]
 wake-trainer = "trainer.cli:app"

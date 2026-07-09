@@ -33,7 +33,15 @@ python3 -c "import openwakeword; print('openWakeWord OK')"
 wake-trainer --help
 ```
 
-Para usar síntesis Piper local, descarga el binario desde [github.com/rhasspy/piper/releases](https://github.com/rhasspy/piper/releases) y colócalo en `piper/piper`. Ver [docs/providers.md](docs/providers.md) para configurar providers TTS.
+Para usar síntesis Piper local instala el extra correspondiente (no hace
+falta descargar ningún binario — `rhasspy/piper` está archivado y nunca tuvo
+releases para macOS; el paquete Python `piper-tts` es la vía actual):
+
+```bash
+pip install -e ".[piper]"
+```
+
+Ver [docs/providers.md](docs/providers.md) para configurar providers TTS.
 
 ---
 
@@ -107,6 +115,15 @@ Puntuación 0-1  →  threshold  →  wake word detectada
 
 Lo que entrena esta herramienta es únicamente el clasificador binario — un fichero diminuto y sin latencia adicional.
 
+Al ser un clasificador **binario**, necesita ejemplos de las dos clases, no solo de la wake word:
+
+- **Positivos**: tus grabaciones + síntesis TTS de la propia frase.
+- **Negativos**: se generan/descargan solos, no hay que grabarlos —
+  variaciones fonéticas cercanas sintetizadas con TTS ("ok jose", "ok rosa"...)
+  más un dataset general precalculado (voz, ruido, música). En modo `quick`
+  (por defecto) se descargan ~200 MB; en modo `full` ~17 GB para un modelo
+  más robusto frente a falsos positivos. Ver [docs/entrenamiento.md](docs/entrenamiento.md).
+
 ---
 
 ## Documentación
@@ -115,6 +132,7 @@ Lo que entrena esta herramienta es únicamente el clasificador binario — un fi
 |-----|-----------|
 | [docs/getting-started.md](docs/getting-started.md) | Instalación detallada del entorno |
 | [docs/recording-guide.md](docs/recording-guide.md) | Cómo grabar muestras de calidad |
+| [docs/entrenamiento.md](docs/entrenamiento.md) | Cómo funciona el pipeline de entrenamiento (positivos, negativos, quick/full) |
 | [docs/cli-reference.md](docs/cli-reference.md) | Referencia completa de comandos |
 | [docs/providers.md](docs/providers.md) | Configuración de providers TTS |
 | [docs/integracion-jota-voice.md](docs/integracion-jota-voice.md) | Despliegue en Home Assistant |

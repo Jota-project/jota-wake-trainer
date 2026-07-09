@@ -8,21 +8,23 @@ console = Console()
 
 
 def select_openai_voices(voices_raw: list[dict]) -> list[str]:
+    def get_id(v: dict) -> str:
+        return v.get("voice_id") or v.get("id") or v.get("name") or str(v)
+
+    def get_label(v: dict) -> str:
+        return v.get("name") or get_id(v)
+
     console.print(f"  ✓ {len(voices_raw)} voces encontradas")
     for i, v in enumerate(voices_raw[:20], 1):
-        name = v.get("name") or v.get("voice_id") or str(v)
-        console.print(f"    {i}. {name}")
+        console.print(f"    {i}. {get_label(v)}")
     raw = ask("Selecciona voces (números separados por coma, o 'todas')", default="todas")
     if raw.lower() == "todas":
-        return [v.get("name") or v.get("voice_id") for v in voices_raw]
+        return [get_id(v) for v in voices_raw]
     try:
         indices = [int(x.strip()) - 1 for x in raw.split(",")]
-        return [
-            (voices_raw[i].get("name") or voices_raw[i].get("voice_id"))
-            for i in indices if 0 <= i < len(voices_raw)
-        ]
+        return [get_id(voices_raw[i]) for i in indices if 0 <= i < len(voices_raw)]
     except ValueError:
-        return [v.get("name") or v.get("voice_id") for v in voices_raw]
+        return [get_id(v) for v in voices_raw]
 
 
 def select_piper_voices(available: list[str]) -> list[str]:

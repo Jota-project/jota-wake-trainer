@@ -58,13 +58,25 @@ def _record_raw(output_path: Path, countdown: int = 3) -> None:
         console.print(f"  [dim]Preparado...[/dim]  [bold]{i}[/bold]", end="\r")
         time.sleep(1)
     console.print("  [bold red]● GRABANDO[/bold red]          ", end="\r")
-    audio = sd.rec(
-        int(RECORD_DURATION * SAMPLE_RATE),
-        samplerate=SAMPLE_RATE,
-        channels=CHANNELS,
-        dtype="int16",
-    )
-    sd.wait()
+    for attempt in range(3):
+        try:
+            audio = sd.rec(
+                int(RECORD_DURATION * SAMPLE_RATE),
+                samplerate=SAMPLE_RATE,
+                channels=CHANNELS,
+                dtype="int16",
+            )
+            sd.wait()
+            break
+        except sd.PortAudioError:
+            if attempt == 2:
+                raise
+            # macOS CoreAudio puede reportar kAudioHardwareNotRunningError ('stop')
+            # si otra app (Siri, dictado) acaba de liberar el micrófono.
+            # Reinicializar PortAudio resuelve el estado inconsistente.
+            sd._terminate()
+            sd._initialize()
+            time.sleep(0.3)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     sf.write(str(output_path), audio, SAMPLE_RATE, subtype=SUBTYPE)
 

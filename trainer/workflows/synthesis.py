@@ -81,7 +81,12 @@ def add_provider_interactive() -> None:
     else:  # piper
         from trainer.synthesizer import list_voices_piper
         voices_dir = ask("Directorio de voces Piper", default="piper/voices")
-        binary = ask("Ruta al binario piper", default="piper/piper")
+        binary_raw = ask(
+            "Ruta a un binario piper standalone (vacío para usar el paquete "
+            "'piper-tts' instalado vía pip, la opción normal en macOS)",
+            default="",
+        )
+        binary = binary_raw.strip() or None
         available = list_voices_piper(voices_dir)
         if not available:
             console.print(f"  [red]No se encontraron modelos .onnx en {voices_dir}[/red]")
@@ -113,7 +118,7 @@ def _provider_to_tts_source(provider) -> TtsSource | None:
         from trainer.synthesizer import list_voices_openai
         token = os.environ.get(provider.token_env, "") if provider.token_env else ""
         console.print(f"  Consultando voces de [bold]{provider.name}[/bold]...")
-        voices_raw = asyncio.run(list_voices_openai(provider.url, token))
+        voices_raw = asyncio.run(list_voices_openai(provider.url, token, token_header=provider.token_header))
         if voices_raw:
             console.print(f"  ✓ {len(voices_raw)} voces disponibles")
             selected = select_openai_voices(voices_raw)
@@ -148,6 +153,7 @@ def _provider_to_tts_source(provider) -> TtsSource | None:
         type=provider.type,
         url=provider.url,
         token_env=provider.token_env,
+        token_header=provider.token_header,
         binary=provider.binary,
         voices_dir=provider.voices_dir,
         selected_voices=selected,
@@ -230,8 +236,14 @@ def synthesize_project(project: Project) -> None:
     console.print(f"  [green]✓ {generated} clips generados[/green]")
 
 
-def run_synthesize_step(model_name: str) -> None:
+def run_synthesize_step(model_name: str, add_provider: bool = False) -> None:
     project = load_project(model_name)
-    if not project.synthesis.sources:
+    # Si el proyecto ya tiene fuentes TTS configuradas, por defecto NO se
+    # vuelve a preguntar (para que "synthesize" repetido sin más solo
+    # continúe generando lo que falte). Para añadir un provider nuevo a un
+    # proyecto que ya tiene alguno (p.ej. Piper como alternativa/complemento
+    # a un provider de pago que se ha quedado sin cuota), hace falta pedirlo
+    # explícitamente con --add-provider.
+    if not project.synthesis.sources or add_provider:
         configure_synthesis(project)
     synthesize_project(project)

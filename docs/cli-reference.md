@@ -105,43 +105,53 @@ wake-trainer import ok_jota --voice Maria --dir ~/Downloads/grabaciones_maria
 ## synthesize
 
 ```
-wake-trainer synthesize MODELO
+wake-trainer synthesize MODELO [--add-provider]
 ```
 
-Genera muestras sintéticas de voz usando los providers TTS configurados para el proyecto. Si el proyecto no tiene sources TTS asignadas, lanza el asistente de configuración de síntesis.
+Genera muestras sintéticas de voz usando los providers TTS configurados para el proyecto. Si el proyecto no tiene ninguna fuente TTS asignada todavía, lanza el asistente de configuración de síntesis automáticamente.
 
-| Argumento | Descripción |
-|-----------|-------------|
+| Argumento / Flag | Descripción |
+|-------------------|-------------|
 | `MODELO` | Nombre del modelo (requerido). |
+| `--add-provider` | Fuerza el asistente de configuración aunque el proyecto ya tenga fuentes TTS asignadas, para añadir una más (p.ej. añadir Piper local como alternativa gratuita si un provider de pago como ElevenLabs se ha quedado sin cuota). Sin este flag, si ya hay fuentes configuradas, el comando simplemente sigue generando lo que falte con ellas. |
 
-**Ejemplo:**
+**Ejemplos:**
 
 ```bash
+# Generar lo que falte con las fuentes ya configuradas
 wake-trainer synthesize ok_jota
+
+# Añadir un provider nuevo (p.ej. Piper) a un proyecto que ya tenía otro
+wake-trainer synthesize ok_jota --add-provider
 ```
 
-El número de clips generados depende de las voces configuradas, las velocidades y el número de variaciones por voz.
+El número de clips generados depende de las voces configuradas, las velocidades y el número de variaciones por voz. Si un provider ya generó todas sus combinaciones voz×velocidad en una ejecución anterior, no vuelve a generarlas — por eso "0 clips generados" no siempre es un error, puede significar que ese provider ya estaba completo.
 
 ---
 
 ## train
 
 ```
-wake-trainer train MODELO
+wake-trainer train MODELO [--full]
 ```
 
-Entrena el clasificador binario a partir de los datos disponibles (clips reales + sintéticos). Muestra un estimado del dataset antes de confirmar.
+Entrena el clasificador binario openWakeWord a partir de los clips disponibles (grabados + sintéticos) más datos negativos, que se generan/descargan automáticamente — no hace falta grabar nada negativo a mano. Ver [docs/entrenamiento.md](entrenamiento.md) para el detalle del pipeline.
 
-| Argumento | Descripción |
-|-----------|-------------|
+| Argumento / Flag | Descripción |
+|-------------------|-------------|
 | `MODELO` | Nombre del modelo (requerido). |
+| `--full` | Descarga ACAV100M completo (~17 GB) como negativos de entrenamiento, en vez del modo rápido por defecto (~200 MB, reutiliza el set de validación). Más robusto frente a falsos positivos, mucho más lento de preparar. |
 
-El modelo entrenado se guarda en `models/<nombre>.tflite`. En un MacBook Air M2 con ~1.000 muestras el proceso tarda entre 20 y 40 minutos.
+El modelo entrenado se guarda en `models/<nombre>.tflite` (o `.onnx` si no tienes instalado el extra `tflite`). En modo rápido, con ~150 clips positivos, el entrenamiento en sí (no la descarga) tarda pocos minutos en CPU.
 
-**Ejemplo:**
+**Ejemplos:**
 
 ```bash
+# Modo rápido (por defecto)
 wake-trainer train ok_jota
+
+# Modo full — mejor calidad, descarga ~17 GB la primera vez
+wake-trainer train ok_jota --full
 ```
 
 ---

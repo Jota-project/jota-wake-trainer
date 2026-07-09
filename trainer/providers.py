@@ -10,9 +10,10 @@ PROVIDERS_FILE = Path("configs/providers.local.json")
 @dataclass
 class ProviderConfig:
     name: str
-    type: Literal["piper", "openai"]
+    type: Literal["piper", "openai", "google"]
     url: Optional[str] = None
     token_env: Optional[str] = None
+    token_header: Optional[str] = None
     voices: list[str] = field(default_factory=list)
     speeds: list[float] = field(default_factory=lambda: [0.8, 0.9, 1.0, 1.1, 1.2])
     binary: Optional[str] = None

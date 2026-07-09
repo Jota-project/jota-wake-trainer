@@ -4,6 +4,57 @@ import pytest
 from unittest.mock import AsyncMock, patch
 import trainer.workflows.synthesis as syn_mod
 from trainer.providers import ProviderConfig
+from trainer.state import Project, SynthesisState, TrainingState, TtsSource
+
+
+def _make_project(sources=None):
+    return Project(
+        wake_word="ok jota",
+        model_name="ok_jota",
+        created_at="2026-01-01T00:00:00+00:00",
+        voices=[],
+        synthesis=SynthesisState(sources=sources or []),
+        training=TrainingState(),
+    )
+
+
+def test_run_synthesize_step_skips_configure_when_sources_exist(monkeypatch):
+    project = _make_project(sources=[TtsSource(type="openai", url="http://x", selected_voices=["a"])])
+    monkeypatch.setattr(syn_mod, "load_project", lambda name: project)
+    monkeypatch.setattr(syn_mod, "synthesize_project", lambda p: None)
+
+    called = {"configure": False}
+    monkeypatch.setattr(syn_mod, "configure_synthesis", lambda p: called.__setitem__("configure", True))
+
+    syn_mod.run_synthesize_step("ok_jota")
+
+    assert called["configure"] is False
+
+
+def test_run_synthesize_step_calls_configure_when_no_sources(monkeypatch):
+    project = _make_project(sources=[])
+    monkeypatch.setattr(syn_mod, "load_project", lambda name: project)
+    monkeypatch.setattr(syn_mod, "synthesize_project", lambda p: None)
+
+    called = {"configure": False}
+    monkeypatch.setattr(syn_mod, "configure_synthesis", lambda p: called.__setitem__("configure", True))
+
+    syn_mod.run_synthesize_step("ok_jota")
+
+    assert called["configure"] is True
+
+
+def test_run_synthesize_step_add_provider_forces_configure_even_with_sources(monkeypatch):
+    project = _make_project(sources=[TtsSource(type="openai", url="http://x", selected_voices=["a"])])
+    monkeypatch.setattr(syn_mod, "load_project", lambda name: project)
+    monkeypatch.setattr(syn_mod, "synthesize_project", lambda p: None)
+
+    called = {"configure": False}
+    monkeypatch.setattr(syn_mod, "configure_synthesis", lambda p: called.__setitem__("configure", True))
+
+    syn_mod.run_synthesize_step("ok_jota", add_provider=True)
+
+    assert called["configure"] is True
 
 
 def test_provider_to_tts_source_uses_existing_voices(monkeypatch):

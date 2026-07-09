@@ -15,7 +15,16 @@ Cualquier endpoint compatible con la API de audio de OpenAI. Incluye:
 
 ### piper
 
-Síntesis local con [Piper TTS](https://github.com/rhasspy/piper). Sin red, sin coste, completamente privado. Requiere el binario `piper` y modelos de voz `.onnx`.
+Síntesis local con [Piper TTS](https://github.com/OHF-voice/piper1-gpl). Sin red, sin coste, completamente privado.
+
+> El repositorio original `rhasspy/piper` (que distribuía binarios standalone)
+> está **archivado** y nunca publicó releases para macOS — solo Linux
+> (amd64/arm64/armv7). El proyecto activo, `OHF-Voice/piper1-gpl`, se instala
+> como paquete Python (`pip install -e '.[piper]'`) y `wake-trainer` lo invoca
+> como módulo (`python3 -m piper`) usando el mismo intérprete — no hace falta
+> descargar ni indicar la ruta a ningún binario. El campo `binary` en la
+> configuración solo es necesario si tienes un ejecutable standalone real
+> (p.ej. en Linux); déjalo vacío en macOS.
 
 ---
 
@@ -46,7 +55,7 @@ El wizard consulta las voces disponibles en tu cuenta y te permite seleccionarla
 Nombre del provider: piper_local
 Tipo: piper
 Directorio de voces Piper: piper/voices
-Ruta al binario piper: piper/piper
+Ruta a un binario piper standalone (vacío para usar el paquete 'piper-tts' instalado vía pip, la opción normal en macOS):
 ```
 
 El wizard escanea los modelos `.onnx` en el directorio indicado.
@@ -75,7 +84,7 @@ Para una wake word en español, estos modelos dan buenos resultados:
 | `es_ES-sharvard-medium` | Español (España) | ~60 MB | media |
 | `es_MX-ald-medium` | Español (México) | ~60 MB | media |
 
-Descarga desde [rhasspy.github.io/piper-samples](https://rhasspy.github.io/piper-samples/) y coloca los archivos `.onnx` y `.onnx.json` en `piper/voices/`.
+Descarga con `wake-trainer providers piper-voices` (usa HuggingFace) o manualmente desde [rhasspy.github.io/piper-samples](https://rhasspy.github.io/piper-samples/), colocando los archivos `.onnx` y `.onnx.json` en `piper/voices/`.
 
 ---
 
@@ -98,7 +107,7 @@ Estructura del fichero:
   {
     "name": "piper_local",
     "type": "piper",
-    "binary": "piper/piper",
+    "binary": null,
     "voices_dir": "piper/voices",
     "voices": ["piper/voices/es_ES-davefx-medium.onnx"],
     "speeds": [0.8, 1.0, 1.2]

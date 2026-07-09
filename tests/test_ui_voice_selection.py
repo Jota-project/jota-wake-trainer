@@ -13,17 +13,17 @@ PIPER_VOICES = ["piper/voices/es_ES.onnx", "piper/voices/en_US.onnx"]
 
 def test_select_openai_todas(monkeypatch):
     monkeypatch.setattr(vs_mod, "ask", lambda *a, **kw: "todas")
-    assert vs_mod.select_openai_voices(VOICES_RAW) == ["Alice", "Bob", "Carol"]
+    assert vs_mod.select_openai_voices(VOICES_RAW) == ["alice_id", "bob_id", "carol_id"]
 
 
 def test_select_openai_indices(monkeypatch):
     monkeypatch.setattr(vs_mod, "ask", lambda *a, **kw: "1,3")
-    assert vs_mod.select_openai_voices(VOICES_RAW) == ["Alice", "Carol"]
+    assert vs_mod.select_openai_voices(VOICES_RAW) == ["alice_id", "carol_id"]
 
 
 def test_select_openai_invalid_fallback(monkeypatch):
     monkeypatch.setattr(vs_mod, "ask", lambda *a, **kw: "no_es_numero")
-    assert vs_mod.select_openai_voices(VOICES_RAW) == ["Alice", "Bob", "Carol"]
+    assert vs_mod.select_openai_voices(VOICES_RAW) == ["alice_id", "bob_id", "carol_id"]
 
 
 def test_select_piper_todas(monkeypatch):

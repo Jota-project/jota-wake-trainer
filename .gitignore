@@ -9,9 +9,23 @@ data/positivos/
 data/sintetizados/
 data/negativos/
 
+# Audio de referencia para clonado de voz (XTTS) — datos personales/biométricos,
+# de terceros en el caso de Magarma (notas de voz de WhatsApp). No se versiona
+# bajo ningún concepto: es voz real de personas identificables, no algo que
+# deba vivir en un repo aunque sea privado o de una organización.
+data/referencia_voz_sito/
+data/referencia_voz_magarma/
+data/referencia_voz_*/
+
+# Datasets de ruido/RIR descargados de HuggingFace para la augmentación
+# (grandes y regenerables — ver trainer/noise_data.py)
+data/background_noise/
+data/rir/
+
 # Entorno virtual
 .venv/
 venv/
+.venv-clone/
 __pycache__/
 *.pyc
 
@@ -26,7 +40,16 @@ output/*.ckpt
 output/*.pt
 output/logs/
 
-# El modelo .tflite final SÍ se versiona (es pequeño, ~5 KB)
+# Negativos precalculados descargados de HuggingFace (~200 MB - 17 GB, cacheados)
+data/negative_features/
+
+# Directorio de trabajo del entrenamiento (features .npy intermedias, grandes)
+models/_work/
+projects/*/models/_work/
+
+# El modelo .onnx intermedio no se versiona, el .tflite final SÍ (es pequeño, ~5 KB)
+models/*.onnx
+projects/*/models/*.onnx
 !models/*.tflite
 
 # Build artifacts
@@ -36,6 +59,9 @@ build/
 
 # macOS
 .DS_Store
+
+# Superpowers brainstorming sessions
+.superpowers/
 
 # Datos de audio de proyectos (mismo criterio que data/ raíz)
 projects/*/data/positivos/

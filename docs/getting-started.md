@@ -24,20 +24,45 @@ source .venv/bin/activate
 
 ```bash
 pip install --upgrade pip
-pip install openWakeWord[train]
+pip install -e ".[train]"
 ```
 
-En macOS Apple Silicon, PyTorch incluye soporte MPS (Metal Performance Shaders) automáticamente — no se necesita configuración adicional.
+> `pip install openWakeWord[train]` **no funciona** — openWakeWord no publica
+> ningún extra llamado `train` (solo `full`, que además arrastra
+> `tensorflow-cpu==2.8.1` y `onnx-tf==1.10.0`, sin wheels para macOS Apple
+> Silicon ni Python 3.11+). El extra `train` de este proyecto instala las
+> dependencias reales de entrenamiento sin ese lastre.
 
-## 4. Descargar Piper TTS
+Nota sobre el entrenamiento en sí: openWakeWord entrena siempre en CPU
+(`torch.cuda.is_available()` es `False` en Mac, así que no usa MPS), pero el
+modelo es diminuto (una DNN de un par de capas sobre 16×96 features), así
+que unos miles de pasos tardan minutos, no horas.
 
-Piper genera las muestras sintéticas de voz. Descarga el binario para tu plataforma desde [github.com/rhasspy/piper/releases](https://github.com/rhasspy/piper/releases) y colócalo en `piper/`:
+Para exportar el modelo final a `.tflite` (el formato que carga el addon
+openWakeWord de Home Assistant en CPU) hace falta un segundo extra:
 
 ```bash
-mkdir -p piper
-# Ejemplo para macOS ARM64:
-# curl -L <url-release-piper-macos-aarch64> | tar xz -C piper/
+pip install -e ".[tflite]"
 ```
+
+Sin este extra el entrenamiento sigue funcionando igual y deja un `.onnx`
+válido — solo no se puede convertir a `.tflite` hasta instalarlo.
+
+## 4. Instalar Piper TTS
+
+Piper genera las muestras sintéticas de voz. El repositorio original
+(`rhasspy/piper`, que distribuía binarios standalone) está **archivado** y
+nunca publicó binarios para macOS — solo Linux (amd64/arm64/armv7). El
+proyecto activo es [OHF-Voice/piper1-gpl](https://github.com/OHF-voice/piper1-gpl),
+que se instala como paquete Python:
+
+```bash
+pip install -e '.[piper]'
+```
+
+No hace falta descargar ni colocar ningún binario manualmente — `wake-trainer`
+invoca Piper como módulo (`python3 -m piper`) usando el mismo intérprete con
+el que se instaló.
 
 Después descarga los modelos de voz (ver [recording-guide.md](recording-guide.md#voces-piper-recomendadas)).
 
@@ -45,7 +70,7 @@ Después descarga los modelos de voz (ver [recording-guide.md](recording-guide.m
 
 ```bash
 python3 -c "import openwakeword; print('openWakeWord OK')"
-./piper/piper --version
+python3 -m piper --help
 ```
 
 Si ambos comandos responden sin errores, el entorno está listo.
