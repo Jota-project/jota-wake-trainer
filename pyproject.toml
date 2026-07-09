@@ -56,7 +56,7 @@ train = [
     "torch-audiomentations==0.12.0",
     "acoustics>=0.2.6,<1",
     "pronouncing>=0.2.0",
-    "mutagen>=1.46",
+    "mutagen>=1.48.1",
     "pyyaml>=6.0",
     # Para descargar los datasets de ruido de fondo/RIR reales de HuggingFace
     # (ver trainer/noise_data.py) vía `datasets.load_dataset(..., streaming=True)`
