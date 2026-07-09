@@ -1,0 +1,25 @@
+# .github/dependabot.yml
+# Plantilla estándar de la organización (STANDARDS.md), sin la sección de
+# Docker (este repo no tiene Dockerfile) ni gitsubmodule (no es un repo C++).
+version: 2
+updates:
+  # Dependencias Python
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "python"
+
+  # Versiones de GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "github-actions"

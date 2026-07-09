@@ -1,0 +1,47 @@
+# .github/workflows/release.yml
+# Plantilla estándar de la organización (STANDARDS.md). Usa la GitHub App
+# de Jota-project (secrets APP_ID + APP_PRIVATE_KEY) para poder pushear el
+# CHANGELOG.md y crear el release saltándose la protección de rama de forma
+# legítima (vía token de app, no un PAT personal).
+name: Semantic Release
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Generate Token from Jota-App
+        id: generate_token
+        uses: tibdex/github-app-token@v2
+        with:
+          app_id: ${{ secrets.APP_ID }}
+          private_key: ${{ secrets.APP_PRIVATE_KEY }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "lts/*"
+
+      - name: Install Semantic Release
+        run: |
+          npm install -g semantic-release \
+            @semantic-release/changelog \
+            @semantic-release/git \
+            @semantic-release/github
+
+      - name: Run Semantic Release
+        env:
+          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
+        run: npx semantic-release

@@ -1,32 +1,26 @@
 # .github/workflows/tests.yml
-name: Tests
+#
+# OBSOLETO — sustituido por .github/workflows/test.yml (nombre alineado con
+# STANDARDS.md de Jota-project). Este fichero no se pudo borrar desde el
+# entorno donde se hizo el cambio por una restricción del propio mount de
+# archivos (falla el unlink incluso para "rm"/"mv" a nivel de sistema
+# operativo, no es cosa de git). Bórralo tú con normalidad:
+#
+#   git rm .github/workflows/tests.yml
+#   git commit -m "chore: elimina workflow de tests duplicado (ver test.yml)"
+#   git push
+#
+# Mientras tanto, "on: workflow_dispatch" evita que corra automáticamente
+# en cada push/PR (solo se podría lanzar a mano desde la pestaña Actions),
+# así que no compite ni duplica al workflow real.
+name: "Tests (OBSOLETO - borrar, ver test.yml)"
 
 on:
-  push:
-  pull_request:
+  workflow_dispatch:
 
 jobs:
-  test:
+  noop:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      # sounddevice (dependencia base, ver pyproject.toml) necesita la
-      # librería nativa PortAudio en tiempo de import, no solo en tiempo de
-      # ejecución — sin esto, "import sounddevice" lanza
-      # "OSError: PortAudio library not found" y pytest aborta la
-      # recolección de tests/test_recorder.py y
-      # tests/test_workflows_recording.py con exit code 2, tumbando toda la
-      # suite aunque el resto de tests no toquen audio para nada.
-      - name: Instalar PortAudio (requerido por sounddevice)
-        run: sudo apt-get update && sudo apt-get install -y libportaudio2
-
-      - name: Instalar dependencias
-        run: pip install -e ".[dev]"
-
-      - name: Ejecutar tests
-        run: pytest tests/ -q
+      - run: |
+          echo "Este workflow esta obsoleto. Borralo - ver comentario al inicio del fichero."

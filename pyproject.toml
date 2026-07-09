@@ -21,7 +21,12 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "pytest-asyncio>=0.24"]
+# ruff: exigido por STANDARDS.md de la organización (paso "Lint (ruff)" en
+# CI). De momento el workflow lo corre en modo no bloqueante (--exit-zero)
+# — ver .github/workflows/test.yml — porque el código existente aún no se
+# ha limpiado contra sus reglas. Issue abierto para hacerlo en serio más
+# adelante en vez de en esta misma tanda de cambios.
+dev = ["pytest>=8", "pytest-asyncio>=0.24", "ruff>=0.4"]
 # NOTA: openwakeword no tiene un extra "train" — el propio paquete solo
 # define "full", que además arrastra tensorflow-cpu==2.8.1 y onnx-tf==1.10.0
 # (sin wheels para macOS Apple Silicon / Python 3.11+). Por eso listamos aquí
@@ -165,3 +170,19 @@ include = ["trainer*"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+# Set de reglas deliberadamente pequeño para el arranque: errores reales
+# (F, pyflakes) y estilo básico (E). Nada de reglas de import-order/complejidad
+# todavía — eso genera cientos de avisos en código ya existente y el CI las
+# corre en modo no bloqueante (--exit-zero) mientras se decide si se adoptan
+# más reglas. Ver issue "Adoptar ruff en serio (arreglar avisos + CI bloqueante)".
+select = ["E", "F"]
+ignore = [
+    "E501",  # línea larga — ya cubierto por line-length, pero muchos
+             # docstrings/comentarios existentes lo superan; no bloquear por eso.
+]
