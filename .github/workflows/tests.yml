@@ -15,6 +15,16 @@ jobs:
         with:
           python-version: "3.11"
 
+      # sounddevice (dependencia base, ver pyproject.toml) necesita la
+      # librería nativa PortAudio en tiempo de import, no solo en tiempo de
+      # ejecución — sin esto, "import sounddevice" lanza
+      # "OSError: PortAudio library not found" y pytest aborta la
+      # recolección de tests/test_recorder.py y
+      # tests/test_workflows_recording.py con exit code 2, tumbando toda la
+      # suite aunque el resto de tests no toquen audio para nada.
+      - name: Instalar PortAudio (requerido por sounddevice)
+        run: sudo apt-get update && sudo apt-get install -y libportaudio2
+
       - name: Instalar dependencias
         run: pip install -e ".[dev]"
 
