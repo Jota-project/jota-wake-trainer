@@ -57,10 +57,39 @@ class TFLiteExportError(RuntimeError):
     pass
 
 
+def _name_candidates(name: str) -> list[str]:
+    """
+    Variantes candidatas de un nombre de tensor ONNX tal y como onnx2tf/
+    TensorFlow podrían "sanearlo" internamente al construir el SavedModel —
+    ':' no es un carácter válido en nombres de tensor de TF. Verificado
+    empíricamente para este proyecto: 'onnx::Flatten_0' pasa a llamarse
+    'onnx____Flatten_0' dentro del SavedModel (cada ':' -> '__'). No existe
+    una función pública estable de onnx2tf para esto (podría cambiar entre
+    versiones), así que en vez de asumir una única regla fija, `
+    convert_onnx_to_tflite` prueba estas variantes en orden y se queda con
+    la primera que produzca un .tflite cuyo shape de entrada coincide de
+    verdad con el .onnx de origen — se verifica el resultado real, no se
+    confía a ciegas en el nombre pasado.
+    """
+    candidates = [name]
+    if ":" in name:
+        candidates.append(name.replace(":", "__"))
+        candidates.append(name.replace("::", "____"))
+        candidates.append(name.replace(":", "_"))
+    seen: set[str] = set()
+    out = []
+    for c in candidates:
+        if c not in seen:
+            seen.add(c)
+            out.append(c)
+    return out
+
+
 def convert_onnx_to_tflite(onnx_path: Path, tflite_path: Path) -> Path:
     try:
-        import onnx2tf  # noqa: F401
-        import tensorflow  # noqa: F401
+        import onnx
+        import onnx2tf
+        import tensorflow as tf
     except ImportError as exc:
         raise TFLiteExportError(INSTALL_HINT) from exc
 
@@ -69,24 +98,76 @@ def convert_onnx_to_tflite(onnx_path: Path, tflite_path: Path) -> Path:
     if not onnx_path.exists():
         raise TFLiteExportError(f"No existe el modelo ONNX de origen: {onnx_path}")
 
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        onnx2tf.convert(
-            input_onnx_file_path=str(onnx_path),
-            output_folder_path=tmp_dir,
-            non_verbose=True,
-            output_signaturedefs=True,
+    # onnx2tf trata por defecto cualquier tensor de entrada 3D como si
+    # siguiera la convención NCW de ONNX (batch, canales, ancho) y lo
+    # reordena a NWC (convención de TensorFlow) — para un modelo que NO es
+    # una imagen/señal con "canales" de verdad (aquí es (batch,
+    # ventanas_tiempo, features), p.ej. (1, 16, 96)), ese reordenado es
+    # sencillamente incorrecto: produce un .tflite con los dos últimos ejes
+    # cambiados, (1, 96, 16). Confirmado en producción (openWakeWord vía
+    # Wyoming/Home Assistant): el consumidor calcula el nº de ventanas a
+    # partir del eje equivocado, nunca llega al mínimo esperado, y el hilo
+    # de detección se queda esperando datos para siempre sin procesar nada
+    # — un cuelgue silencioso, no un error. `keep_ncw_or_nchw_or_ncdhw_
+    # input_names` le dice a onnx2tf que mantenga el layout NCW original
+    # para ese input concreto en vez de transponerlo.
+    onnx_model = onnx.load(str(onnx_path))
+    input_names = [inp.name for inp in onnx_model.graph.input]
+    expected_input_shape = tuple(
+        d.dim_value for d in onnx_model.graph.input[0].type.tensor_type.shape.dim
+    )
+
+    if len(input_names) != 1:
+        # Los modelos de openWakeWord que entrena este repo tienen un único
+        # input — si esto cambiara, la lógica de candidatos de abajo (que
+        # asume un solo nombre a probar) habría que generalizarla primero.
+        raise TFLiteExportError(
+            f"Se esperaba un único input en el .onnx, encontrados {len(input_names)}: "
+            f"{input_names}. La conversión no soporta este caso todavía."
         )
 
-        candidates = sorted(Path(tmp_dir).glob("*float32.tflite")) or sorted(Path(tmp_dir).glob("*.tflite"))
-        if not candidates:
-            raise TFLiteExportError(
-                "onnx2tf no generó ningún .tflite. Revisa la salida anterior para más detalle."
-            )
+    last_error: Exception | None = None
+    for candidate_name in _name_candidates(input_names[0]):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            try:
+                onnx2tf.convert(
+                    input_onnx_file_path=str(onnx_path),
+                    output_folder_path=tmp_dir,
+                    non_verbose=True,
+                    output_signaturedefs=True,
+                    keep_ncw_or_nchw_or_ncdhw_input_names=[candidate_name],
+                )
+            except Exception as exc:  # noqa: BLE001 — candidato inválido, probamos el siguiente
+                last_error = exc
+                continue
 
-        tflite_path.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy(candidates[0], tflite_path)
+            candidates = sorted(Path(tmp_dir).glob("*float32.tflite")) or sorted(Path(tmp_dir).glob("*.tflite"))
+            if not candidates:
+                last_error = TFLiteExportError("onnx2tf no generó ningún .tflite.")
+                continue
 
-    return tflite_path
+            interpreter = tf.lite.Interpreter(model_path=str(candidates[0]))
+            actual_input_shape = tuple(interpreter.get_input_details()[0]["shape"].tolist())
+            if actual_input_shape != expected_input_shape:
+                # Este candidato de nombre no ha coincidido de verdad con el
+                # tensor dentro de onnx2tf — probamos el siguiente en vez de
+                # fallar aquí directamente.
+                last_error = TFLiteExportError(
+                    f"Candidato de nombre '{candidate_name}' no produjo el shape esperado "
+                    f"(salió {actual_input_shape}, se esperaba {expected_input_shape})."
+                )
+                continue
+
+            tflite_path.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy(candidates[0], tflite_path)
+            return tflite_path
+
+    raise TFLiteExportError(
+        "No se pudo generar un .tflite con el mismo orden de ejes que el .onnx de "
+        f"origen ({expected_input_shape}) tras probar {_name_candidates(input_names[0])}. "
+        f"Último error: {last_error}. No se ha copiado ningún .tflite roto a su destino "
+        "final — revisa trainer/tflite_export.py."
+    )
 
 
 def convert_onnx_to_tflite_in_subprocess(
