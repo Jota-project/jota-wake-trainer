@@ -1,3 +1,11 @@
+## [1.0.1](https://github.com/Jota-project/jota-wake-trainer/compare/v1.0.0...v1.0.1) (2026-07-10)
+
+
+### Bug Fixes
+
+* **ci:** usa el token de la App para el checkout del release ([#13](https://github.com/Jota-project/jota-wake-trainer/issues/13)) ([750dad2](https://github.com/Jota-project/jota-wake-trainer/commit/750dad28984472295f58d857d6341715f5d84373))
+* **tflite:** corrige ejes de entrada invertidos en la conversión ONNX->TFLite ([#12](https://github.com/Jota-project/jota-wake-trainer/issues/12)) ([1c4f67a](https://github.com/Jota-project/jota-wake-trainer/commit/1c4f67a7a866a6e93520f2461eac8ecfbb59a526))
+
 # 1.0.0 (2026-07-09)
 
 
