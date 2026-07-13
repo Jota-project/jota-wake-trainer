@@ -26,7 +26,7 @@ dependencies = [
 # — ver .github/workflows/test.yml — porque el código existente aún no se
 # ha limpiado contra sus reglas. Issue abierto para hacerlo en serio más
 # adelante en vez de en esta misma tanda de cambios.
-dev = ["pytest>=8", "pytest-asyncio>=0.24", "ruff>=0.4"]
+dev = ["pytest>=8", "pytest-asyncio>=0.24", "ruff>=0.15.21"]
 # NOTA: openwakeword no tiene un extra "train" — el propio paquete solo
 # define "full", que además arrastra tensorflow-cpu==2.8.1 y onnx-tf==1.10.0
 # (sin wheels para macOS Apple Silicon / Python 3.11+). Por eso listamos aquí
