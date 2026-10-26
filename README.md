@@ -1,6 +1,6 @@
 # jota-wake-trainer
 
-Entrena tu propia wake word personalizada y despliégala en Home Assistant en menos de 2 horas.
+Entrena tu propia wake word personalizada y úsala en [jota-voice](https://github.com/jota-project/jota-voice) en menos de 2 horas.
 
 Genera un clasificador `.tflite` compatible con [openWakeWord](https://github.com/dscripka/openWakeWord) y el ecosistema [wyoming](https://github.com/rhasspy/wyoming) a partir de grabaciones reales y muestras sintéticas de TTS. Parte del ecosistema **J** — asistente de voz local, privado y personalizable.
 
@@ -17,7 +17,7 @@ Genera un clasificador `.tflite` compatible con [openWakeWord](https://github.co
 ## Instalación
 
 ```bash
-git clone https://github.com/SitoSt/jota-wake-trainer.git
+git clone https://github.com/jota-project/jota-wake-trainer.git
 cd jota-wake-trainer
 
 python3 -m venv .venv
@@ -62,7 +62,7 @@ El wizard te pedirá:
 
 A continuación lanza el proceso de grabación para cada persona (30 clips en 10 condiciones), genera las muestras sintéticas y entrena el modelo.
 
-El archivo resultante queda en `models/<nombre_modelo>.tflite`.
+El archivo resultante queda en `projects/<nombre_modelo>/models/<nombre_modelo>.tflite`.
 
 ---
 
@@ -135,16 +135,16 @@ Al ser un clasificador **binario**, necesita ejemplos de las dos clases, no solo
 | [docs/entrenamiento.md](docs/entrenamiento.md) | Cómo funciona el pipeline de entrenamiento (positivos, negativos, quick/full) |
 | [docs/cli-reference.md](docs/cli-reference.md) | Referencia completa de comandos |
 | [docs/providers.md](docs/providers.md) | Configuración de providers TTS |
-| [docs/integracion-jota-voice.md](docs/integracion-jota-voice.md) | Despliegue en Home Assistant |
+| [docs/integracion-jota-voice.md](docs/integracion-jota-voice.md) | Integración con jota-voice (obsoleto; la actual está en el [README de jota-voice](https://github.com/jota-project/jota-voice#readme)) |
 
 ---
 
 ## Ecosistema J
 
-[jota-voice](https://github.com/alfonsogarre/jota-voice) es el repositorio principal: configura el satélite Wyoming en Android, el pipeline de Home Assistant y todos los servicios asociados. `jota-wake-trainer` genera el modelo `.tflite` que jota-voice consume.
+[jota-voice](https://github.com/jota-project/jota-voice) es el cliente de voz de Jota para Mac y Android (Termux): detecta la wake word en local con openWakeWord. `jota-wake-trainer` genera el modelo `.tflite` que jota-voice consume. Al ser un modelo openWakeWord estándar, también lo puede cargar cualquier otro consumidor de openWakeWord (p. ej. Wyoming openWakeWord en Home Assistant).
 
 ---
 
 ## Licencia
 
-MIT
+MIT. Ver [LICENSE](LICENSE).
