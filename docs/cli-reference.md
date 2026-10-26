@@ -142,7 +142,7 @@ Entrena el clasificador binario openWakeWord a partir de los clips disponibles (
 | `MODELO` | Nombre del modelo (requerido). |
 | `--full` | Descarga ACAV100M completo (~17 GB) como negativos de entrenamiento, en vez del modo rápido por defecto (~200 MB, reutiliza el set de validación). Más robusto frente a falsos positivos, mucho más lento de preparar. |
 
-El modelo entrenado se guarda en `models/<nombre>.tflite` (o `.onnx` si no tienes instalado el extra `tflite`). En modo rápido, con ~150 clips positivos, el entrenamiento en sí (no la descarga) tarda pocos minutos en CPU.
+El modelo entrenado se guarda en `projects/<nombre>/models/<nombre>.tflite` (o `.onnx` si no tienes instalado el extra `tflite`). En modo rápido, con ~150 clips positivos, el entrenamiento en sí (no la descarga) tarda pocos minutos en CPU.
 
 **Ejemplos:**
 
@@ -177,7 +177,7 @@ wake-trainer evaluate ok_jota
 Salida de ejemplo:
 
 ```
-  Modelo:            models/ok_jota.tflite
+  Modelo:            projects/ok_jota/models/ok_jota.tflite
   Precisión:         94.2%
   Recall:            91.7%
   Falsos positivos:  1 en 10 s de silencio
