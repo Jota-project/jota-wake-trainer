@@ -9,7 +9,7 @@
 ## 1. Clonar el repositorio
 
 ```bash
-git clone https://github.com/alfonsogarre/jota-wake-trainer.git
+git clone https://github.com/jota-project/jota-wake-trainer.git
 cd jota-wake-trainer
 ```
 

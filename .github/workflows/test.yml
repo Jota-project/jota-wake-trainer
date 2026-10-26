@@ -20,7 +20,10 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    # shortcut: en ubuntu-26.04 (nuevo ubuntu-latest) libportaudio2 exige un
+    # servidor PulseAudio y `import sounddevice` lanza PortAudioError; volver a
+    # ubuntu-latest cuando el CI levante un sink de audio o se retire 24.04.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
 
