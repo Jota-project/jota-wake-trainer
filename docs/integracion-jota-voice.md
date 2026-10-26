@@ -1,5 +1,7 @@
 # Integración con jota-voice
 
+> **Obsoleto.** Este documento describe una integración antigua y ya no refleja cómo funciona jota-voice. La integración actual está en el [README de jota-voice](https://github.com/jota-project/jota-voice#readme).
+
 ## Requisitos previos
 
 - [jota-voice](https://github.com/alfonsogarre/jota-voice) instalado y funcionando
