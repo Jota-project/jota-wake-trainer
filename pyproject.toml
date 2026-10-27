@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=68", "wheel"]
+requires = ["setuptools>=83.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -12,7 +12,7 @@ dependencies = [
     "sounddevice>=0.5.5",
     "soundfile>=0.14.0",
     "numpy>=2.4.6",
-    "httpx>=0.27",
+    "httpx>=0.28.1",
     # Para normalizar a 16kHz mono el audio sintetizado (las voces Piper no
     # comparten sample rate nativo — ver trainer/audio_utils.py). Se necesita
     # en tiempo de síntesis, no solo de entrenamiento, así que va en las
@@ -26,7 +26,7 @@ dependencies = [
 # — ver .github/workflows/test.yml — porque el código existente aún no se
 # ha limpiado contra sus reglas. Issue abierto para hacerlo en serio más
 # adelante en vez de en esta misma tanda de cambios.
-dev = ["pytest>=8", "pytest-asyncio>=0.24", "ruff>=0.4"]
+dev = ["pytest>=8", "pytest-asyncio>=0.24", "ruff>=0.15.21"]
 # NOTA: openwakeword no tiene un extra "train" — el propio paquete solo
 # define "full", que además arrastra tensorflow-cpu==2.8.1 y onnx-tf==1.10.0
 # (sin wheels para macOS Apple Silicon / Python 3.11+). Por eso listamos aquí
@@ -38,7 +38,7 @@ train = [
     # import, así que hay que fijar una versión anterior explícitamente
     # (no basta con "instalar setuptools": pip resuelve a la última si no
     # hay tope, y la última ya no lo trae).
-    "setuptools<82",
+    "setuptools<84",
     "openwakeword>=0.6.0",
     "torch>=2.0",
     "torchaudio>=2.11.0",
@@ -100,7 +100,7 @@ tflite = [
     # de Keras 2 que onnx2tf usa internamente para su conversión "TF-backed".
     # Sin este paquete, "import onnx2tf" falla con "ModuleNotFoundError: No
     # module named 'tf_keras'".
-    "tf-keras>=2.16,<3",
+    "tf-keras>=2.21.0,<3",
     # Resto de imports incondicionales confirmados por el análisis AST de la
     # 1.26.9 (todos con wheels universales, sin restricción de plataforma):
     "onnx-graphsurgeon>=0.5",
