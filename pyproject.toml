@@ -100,7 +100,7 @@ tflite = [
     # de Keras 2 que onnx2tf usa internamente para su conversión "TF-backed".
     # Sin este paquete, "import onnx2tf" falla con "ModuleNotFoundError: No
     # module named 'tf_keras'".
-    "tf-keras>=2.16,<3",
+    "tf-keras>=2.21.0,<3",
     # Resto de imports incondicionales confirmados por el análisis AST de la
     # 1.26.9 (todos con wheels universales, sin restricción de plataforma):
     "onnx-graphsurgeon>=0.5",
