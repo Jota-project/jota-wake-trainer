@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=68", "wheel"]
+requires = ["setuptools>=83.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -38,7 +38,7 @@ train = [
     # import, así que hay que fijar una versión anterior explícitamente
     # (no basta con "instalar setuptools": pip resuelve a la última si no
     # hay tope, y la última ya no lo trae).
-    "setuptools<82",
+    "setuptools<84",
     "openwakeword>=0.6.0",
     "torch>=2.0",
     "torchaudio>=2.0",
