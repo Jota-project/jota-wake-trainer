@@ -108,7 +108,7 @@ tflite = [
     "absl-py>=1.0",
     "flatbuffers>=23",
     "requests>=2.28",
-    "sng4onnx>=1.0",
+    "sng4onnx>=2.0.1",
 ]
 # rhasspy/piper (el binario standalone al que apuntaba la doc original) está
 # archivado y nunca publicó releases para macOS (solo Linux amd64/arm64/armv7).
